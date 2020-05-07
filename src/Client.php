@@ -700,6 +700,15 @@ class Client
      */
     public function tableSize(string $tableName)
     {
+        //no need to execute several times the same query if use this function in foreach
+        static $_cache=null;
+        if ( is_null($_cache) ){
+            $tables = $this->tablesSize();
+            $_cache = $tables;
+        } else {
+            $tables = $_cache;
+        }
+        
         $tables = $this->tablesSize();
 
         if (isset($tables[$tableName])) {
@@ -725,6 +734,9 @@ class Client
      * @param bool $flatList
      * @return mixed[][]
      * @throws \Exception
+     
+     AS a - fix error message
+      No alias for subquery or table function in JOIN (set joined_subquery_requires_alias=0 to disable restriction). (version 20.3.8.53 (official build))
      */
     public function tablesSize($flatList = false)
     {
@@ -745,7 +757,7 @@ class Client
                         FROM system.parts 
                         WHERE active AND database=:database
                         GROUP BY table,database
-            ) USING ( table,database )
+            ) AS a USING ( table,database )
             WHERE database=:database
             GROUP BY table,database
         ',
