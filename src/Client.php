@@ -709,7 +709,6 @@ class Client
             $tables = $_cache;
         }
         
-        $tables = $this->tablesSize();
 
         if (isset($tables[$tableName])) {
             return $tables[$tableName];
