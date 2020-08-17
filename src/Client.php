@@ -65,7 +65,7 @@ class Client
     {
         //fix out of memory 
         //vendor\ClickHouseDB\Transport\CurlerRolling.php</b> on line <b>249
-        ini_set('memory_limit',-1);
+        ini_set('memory_limit', "-1");
         
         if (!isset($connectParams['username'])) {
             throw  new \InvalidArgumentException('not set username');
