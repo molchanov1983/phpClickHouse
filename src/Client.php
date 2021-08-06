@@ -66,6 +66,10 @@ class Client
      */
     public function __construct(array $connectParams, array $settings = [])
     {
+            //fix out of memory
+        //vendor\ClickHouseDB\Transport\CurlerRolling.php</b> on line <b>249
+        ini_set('memory_limit', "-1");
+        
         if (!isset($connectParams['username'])) {
             throw  new \InvalidArgumentException('not set username');
         }
@@ -708,7 +712,7 @@ class Client
 
         return $this->select(
             '
-            SELECT database,formatReadableSize(sum(bytes)) as size
+            SELECT database,formatReadableSize(sum(bytes)) as size, (sum(bytes)) as sizebytes
             FROM system.parts
             WHERE active AND database=:database
             GROUP BY database
@@ -725,7 +729,15 @@ class Client
      */
     public function tableSize(string $tableName)
     {
-        $tables = $this->tablesSize();
+         //no need to execute several times the same query if use this function in foreach
+        static $_cache=null;
+        if ( is_null($_cache) ){
+            $tables = $this->tablesSize();
+            $_cache = $tables;
+        } else {
+            $tables = $_cache;
+        }
+        
 
         if (isset($tables[$tableName])) {
             return $tables[$tableName];
@@ -781,6 +793,26 @@ class Client
         }
 
         return $result->rowsAsTree('table');
+    }
+    
+        /**
+     * get max_date and min_date by table
+     * @param type $table
+     * @return type
+     */
+    public function getMinAndMaxDateByTable($table){
+        return $this->select('
+            (SELECT max_date as _date
+                FROM system.parts
+                WHERE like(table,\'%' . $table . '%\') AND database=\'' . $this->settings()->getDatabase() . '\'
+                ORDER BY max_date DESC LIMIT 1)
+                 UNION ALL
+            (SELECT min_date as _date
+                FROM system.parts
+                WHERE like(table,\'%' . $table . '%\') AND database=\'' . $this->settings()->getDatabase() . '\'
+                ORDER BY min_date ASC LIMIT 1)
+            '
+        )->rowsAsTree('_date');
     }
 
     /**
@@ -897,6 +929,43 @@ CLICKHOUSE
         }
 
         return $l;
+    }
+    
+    public function dropOldPartitions($table_name, $days_ago, $count_partitons_per_one = 100)
+    {
+        $days_ago = strtotime(date('Y-m-d 00:00:00', strtotime('-' . $days_ago . ' day')));
+
+        $drop = [];
+        $list_patitions = $this->partitions($table_name, $count_partitons_per_one);
+
+        foreach ($list_patitions as $partion_id => $partition) {
+            if (stripos($partition['engine'], 'mergetree') === false) {
+                continue;
+            }
+
+            // $min_date = strtotime($partition['min_date']);
+            $max_date = strtotime($partition['max_date']);
+
+            if ($max_date < $days_ago) {
+                $drop[] = $partition['partition'];
+            }
+        }
+
+        $result = [];
+        foreach ($drop as $partition_id) {
+            $state = $this->dropPartition($table_name, $partition_id);
+            if (is_object($state) ){
+                if ($state->isError()) {
+                    $result[$partition_id] = $state->error();
+                } else {
+                    $result[$partition_id] = 'Deleted';
+                }
+            } else {
+                $result[$partition_id] = $state;
+            }
+        }
+
+        return $result;
     }
 
 }
