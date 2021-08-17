@@ -558,7 +558,9 @@ class Http
         $request->url($this->getUri())->verbose(false)->GET()->connectTimeOut($this->getConnectTimeOut());
         $this->_curler->execOne($request);
 
-        return $request->response()->body() === 'Ok.' . PHP_EOL;
+        // alex php windows fix
+        $ok = rtrim($request->response()->body(), "\r\n,\r,\n");
+        return $ok === 'Ok.';
     }
 
     /**
