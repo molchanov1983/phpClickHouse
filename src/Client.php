@@ -799,6 +799,26 @@ class Client
         return $result->rowsAsTree('table');
     }
 
+     /** alex
+     * get max_date and min_date by table
+     * @param type $table
+     * @return type
+     */
+    public function getMinAndMaxDateByTable($table){
+        return $this->select('
+            (SELECT max_date as _date
+                FROM system.parts
+                WHERE like(table,\'%' . $table . '%\') AND database=\'' . $this->settings()->getDatabase() . '\'
+                ORDER BY max_date DESC LIMIT 1)
+                 UNION ALL
+            (SELECT min_date as _date
+                FROM system.parts
+                WHERE like(table,\'%' . $table . '%\') AND database=\'' . $this->settings()->getDatabase() . '\'
+                ORDER BY min_date ASC LIMIT 1)
+            '
+        )->rowsAsTree('_date');
+    }
+
     /**
      * isExists
      *
