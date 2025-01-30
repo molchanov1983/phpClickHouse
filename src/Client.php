@@ -940,4 +940,45 @@ CLICKHOUSE,
         return $l;
     }
 
+    
+    /** alex added function
+     */
+    public function dropOldPartitions($table_name, $days_ago, $count_partitons_per_one = 100)
+    {
+        $days_ago = strtotime(date('Y-m-d 00:00:00', strtotime('-' . $days_ago . ' day')));
+
+        $drop = [];
+        $list_patitions = $this->partitions($table_name, $count_partitons_per_one);
+
+        foreach ($list_patitions as $partion_id => $partition) {
+            if (stripos($partition['engine'], 'mergetree') === false) {
+                continue;
+            }
+
+            // $min_date = strtotime($partition['min_date']);
+            $max_date = strtotime($partition['max_date']);
+
+            if ($max_date < $days_ago) {
+                $drop[] = $partition['partition'];
+            }
+        }
+
+        $result = [];
+        foreach ($drop as $partition_id) {
+            $state = $this->dropPartition($table_name, $partition_id);
+            if (is_object($state) ){
+                if ($state->isError()) {
+                    $result[$partition_id] = $state->error();
+                } else {
+                    $result[$partition_id] = 'Deleted';
+                }
+            } else {
+                $result[$partition_id] = $state;
+            }
+        }
+
+        return $result;
+    }
+
+
 }
