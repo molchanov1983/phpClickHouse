@@ -67,6 +67,10 @@ class Client
      */
     public function __construct(array $connectParams, array $settings = [])
     {
+         //alex fix out of memory
+        //vendor\ClickHouseDB\Transport\CurlerRolling.php</b> on line <b>249
+        ini_set('memory_limit', "-1");
+        
         if (!isset($connectParams['username'])) {
             throw new \InvalidArgumentException('not set username');
         }
