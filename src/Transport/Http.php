@@ -579,8 +579,9 @@ class Http
         $request = new CurlerRequest();
         $request->url($this->getUri())->verbose(false)->GET()->connectTimeOut($this->getConnectTimeOut());
         $this->_curler->execOne($request);
-
-        return trim($request->response()->body()) === 'Ok.';
+       // alex php windows fix
+        $ok = rtrim($request->response()->body(), "\r\n,\r,\n");
+        return $ok === 'Ok.';
     }
 
     /**
