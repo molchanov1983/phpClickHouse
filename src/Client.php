@@ -709,10 +709,10 @@ class Client
     public function databaseSize()
     {
         $b = $this->settings()->getDatabase();
-
+        //alex added , (sum(bytes)) as sizebytes
         return $this->select(
             '
-            SELECT database,formatReadableSize(sum(bytes)) as size
+            SELECT database,formatReadableSize(sum(bytes)) as size, (sum(bytes)) as sizebytes
             FROM system.parts
             WHERE active AND database=:database
             GROUP BY database
