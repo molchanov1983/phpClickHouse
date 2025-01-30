@@ -729,8 +729,16 @@ class Client
      */
     public function tableSize(string $tableName)
     {
-        $tables = $this->tablesSize();
+        //alex - no need to execute several times the same query if use this function in foreach
+        static $_cache=null;
+        if ( is_null($_cache) ){
+            $tables = $this->tablesSize();
+            $_cache = $tables;
+        } else {
+            $tables = $_cache;
+        }
 
+        
         if (isset($tables[$tableName])) {
             return $tables[$tableName];
         }
