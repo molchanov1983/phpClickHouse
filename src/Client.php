@@ -712,10 +712,14 @@ class Client
         //alex added , (sum(bytes)) as sizebytes
         return $this->select(
             '
-            SELECT database,formatReadableSize(sum(bytes)) as size, (sum(bytes)) as sizebytes
-            FROM system.parts
-            WHERE active AND database=:database
-            GROUP BY database
+            SELECT database, formatReadableSize(total_bytes) AS size, total_bytes AS sizebytes
+                FROM
+                (
+                    SELECT database, sum(bytes) AS total_bytes
+                    FROM system.parts
+                    WHERE active AND database=:database
+                    GROUP BY database
+                )
             ',
             ['database' => $b]
         )->fetchOne();
