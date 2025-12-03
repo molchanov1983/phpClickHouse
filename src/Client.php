@@ -984,5 +984,15 @@ CLICKHOUSE,
         return $result;
     }
 
+    //alex added
+    public function getTodayAndYesterdayPartitions(string $table)
+    {
+        $database = $this->settings()->getDatabase();
+        $yest = date('Y-m-d', strtotime('-1 day'));
+        $today = date("Y-m-d");
+
+        return $this->select("SELECT min_date, bytes_on_disk FROM system.parts WHERE table='$table' AND database='$database' AND (partition='$yest' OR partition='$today')")->rowsAsTree('name');
+    }
+
 
 }
